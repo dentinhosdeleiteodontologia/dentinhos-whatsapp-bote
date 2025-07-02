@@ -55,7 +55,8 @@ class BotLogic:
         """Retorna o menu principal"""
         return """🦷 *Dentinhos de Leite Odontologia*
 
-Olá! Seja bem-vindo(a)! Como posso ajudá-lo(a) hoje?
+Olá! Seja bem-vindo(a)! 
+Como posso ajudá-lo(a) hoje?
 
 *Escolha uma das opções:*
 
@@ -74,9 +75,9 @@ Para emergências 24h: (16) 99269-2383 ou (16) 99212-0514"""
         return """💰 *PRIMEIRA CONSULTA*
 
 🔹 *Valor:* R$ 179,90
-🔹                     *Inclui:*
+🔹 *Inclui:*
    • Consulta completa com o Dr Rafael Moreira -Odontopediatra - CRO/SP 156455
-   • À Consulta tem em média 1h de atendimento.
+   • Tem em média 1h de atendimento.
    • Atendimento humanizado e lúdico.
    • Consultório com estrutura completa.
    • Limpeza profissional (profilaxia).
@@ -86,8 +87,8 @@ Para emergências 24h: (16) 99269-2383 ou (16) 99212-0514"""
    • Avaliação Ortodôntica e Ortopédica.
    • Guia de orientação para os pequenos.
 
-📅 Para agendar sua consulta, digite *4* ou *agendar*
-🏠 Voltar ao menu principal: digite *menu*"""
+📅 Para agendar sua consulta, digite *4* ou *Agendar*
+🏠 Voltar ao menu principal: digite *Menu*"""
 
     def get_insurance_info(self):
         """Informações sobre convênios"""
