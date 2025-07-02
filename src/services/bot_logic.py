@@ -56,14 +56,19 @@ class BotLogic:
         return """🦷 *Dentinhos de Leite Odontologia*
 
 Olá! Seja bem-vindo(a)! 
+
 Como posso ajudá-lo(a) hoje?
 
 *Escolha uma das opções:*
 
 1️⃣ Informações sobre primeira consulta
+
 2️⃣ Informações sobre convênios
+
 3️⃣ Conhecer tratamentos disponíveis
+
 4️⃣ Agendar consulta
+
 5️⃣ Falar com a equipe
 
 Digite o número da opção desejada ou a palavra-chave.
