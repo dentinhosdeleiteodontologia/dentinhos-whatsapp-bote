@@ -74,11 +74,17 @@ Para emergências 24h: (16) 99269-2383 ou (16) 99212-0514"""
         return """💰 *PRIMEIRA CONSULTA*
 
 🔹 *Valor:* R$ 179,90
-🔹 *Inclui:*
-   • Consulta completa com Dr. CRO 156455
-   • Limpeza profissional (profilaxia)
-   • Aplicação de flúor (quando necessário)
-   • Orientações de higiene bucal
+🔹                     *Inclui:*
+   • Consulta completa com o Dr Rafael Moreira -Odontopediatra - CRO/SP 156455
+   • À Consulta tem em média 1h de atendimento.
+   • Atendimento humanizado e lúdico.
+   • Consultório com estrutura completa.
+   • Limpeza profissional (profilaxia).
+   • Aplicação de flúor (quando necessário).
+   • Orientações de higiene bucal.
+   • Orientação de Dieta.
+   • Avaliação Ortodôntica e Ortopédica.
+   • Guia de orientação para os pequenos.
 
 📅 Para agendar sua consulta, digite *4* ou *agendar*
 🏠 Voltar ao menu principal: digite *menu*"""
