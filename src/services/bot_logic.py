@@ -1,48 +1,56 @@
+# src/services/bot_logic.py (Versão Modificada)
+
 import re
 from datetime import datetime
 from src.models.conversation import db, Appointment
 
 class BotLogic:
     def __init__(self):
-        self.user_states = {}  # Armazena o estado da conversa de cada usuário
-        
+        self.user_states = {}
+
     def process_message(self, message, phone_number):
-        """Processa a mensagem e retorna a resposta apropriada"""
-        message = message.lower().strip()
-        
-        # Verifica se é horário de atendimento
-        if not self.is_business_hours():
-            return self.get_after_hours_message()
-        
-        # Verifica se o usuário está em um fluxo de agendamento
-        if phone_number in self.user_states:
-            return self.handle_appointment_flow(message, phone_number)
-        
-        # Reconhecimento de palavras-chave
-        if any(word in message for word in ['oi', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'menu']):
+        """Processa a mensagem e retorna a resposta apropriada, considerando o horário comercial."""
+        message_lower = message.lower().strip()
+        state = self.user_states.get(phone_number, {}).get('step', 'initial')
+
+        # --- FLUXO DE CONVERSA PRINCIPAL ---
+        # O menu principal e as informações devem funcionar a qualquer hora.
+        if message_lower in ['oi', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'menu'] or state == 'initial':
+            self.user_states[phone_number] = {'step': 'awaiting_choice'}
             return self.get_main_menu()
-        
-        elif any(word in message for word in ['1', 'primeira consulta', 'consulta', 'valor']):
+
+        elif '1' in message_lower and state == 'awaiting_choice':
             return self.get_first_consultation_info()
-        
-        elif any(word in message for word in ['2', 'convênio', 'convenio', 'plano']):
+
+        elif '2' in message_lower and state == 'awaiting_choice':
             return self.get_insurance_info()
-        
-        elif any(word in message for word in ['3', 'tratamento', 'tratamentos', 'serviços', 'servicos']):
+
+        elif '3' in message_lower and state == 'awaiting_choice':
             return self.get_treatments_info()
-        
-        elif any(word in message for word in ['4', 'agendar', 'agendamento', 'marcar']):
+
+        # --- OPÇÕES QUE DEPENDEM DO HORÁRIO ---
+        # Agora, a verificação do horário é feita aqui, apenas para as opções relevantes.
+
+        elif '4' in message_lower and state == 'awaiting_choice': # Agendar
+            if not self.is_business_hours():
+                return self.get_after_hours_message(action="agendamento")
             return self.start_appointment_flow(phone_number)
-        
-        elif any(word in message for word in ['5', 'equipe', 'falar', 'atendente']):
+
+        elif '5' in message_lower and state == 'awaiting_choice': # Falar com a equipe
+            if not self.is_business_hours():
+                return self.get_after_hours_message(action="atendimento")
             return self.get_team_contact()
-        
-        elif any(word in message for word in ['emergência', 'emergencia', 'urgência', 'urgencia', 'dor']):
+
+        elif any(word in message_lower for word in ['emergência', 'emergencia', 'urgência', 'urgencia', 'dor']):
             return self.get_emergency_contact()
-        
+
+        # --- FLUXO DE AGENDAMENTO (se já estiver em andamento) ---
+        elif phone_number in self.user_states and state != 'awaiting_choice':
+            return self.handle_appointment_flow(message, phone_number)
+
         else:
             return self.get_default_response()
-    
+
     def get_main_menu(self):
         """Retorna o menu principal"""
         return """🦷 *Dentinhos de Leite Odontologia*
@@ -60,7 +68,7 @@ Olá! Seja bem-vindo(a)! Como posso ajudá-lo(a) hoje?
 Digite o número da opção desejada ou a palavra-chave.
 
 Para emergências 24h: (16) 99269-2383 ou (16) 99212-0514"""
-    
+
     def get_first_consultation_info(self):
         """Informações sobre primeira consulta"""
         return """💰 *PRIMEIRA CONSULTA*
@@ -73,9 +81,8 @@ Para emergências 24h: (16) 99269-2383 ou (16) 99212-0514"""
    • Orientações de higiene bucal
 
 📅 Para agendar sua consulta, digite *4* ou *agendar*
-
 🏠 Voltar ao menu principal: digite *menu*"""
-    
+
     def get_insurance_info(self):
         """Informações sobre convênios"""
         return """🏥 *CONVÊNIOS ODONTOLÓGICOS*
@@ -94,7 +101,7 @@ Para garantir a qualidade e o tempo necessário para cada atendimento, optamos p
 💰 Consulta: R$ 179,90
 
 🏠 Voltar ao menu principal: digite *menu*"""
-    
+
     def get_treatments_info(self):
         """Informações sobre tratamentos"""
         return """🦷 *TRATAMENTOS DISPONÍVEIS*
@@ -118,7 +125,7 @@ Para garantir a qualidade e o tempo necessário para cada atendimento, optamos p
 
 📅 Agende sua consulta: digite *4*
 🏠 Menu principal: digite *menu*"""
-    
+
     def start_appointment_flow(self, phone_number):
         """Inicia o fluxo de agendamento"""
         self.user_states[phone_number] = {
@@ -130,26 +137,26 @@ Para garantir a qualidade e o tempo necessário para cada atendimento, optamos p
 Vou precisar de algumas informações:
 
 👶 *Qual o nome da criança?*"""
-    
+
     def handle_appointment_flow(self, message, phone_number):
         """Gerencia o fluxo de agendamento"""
         state = self.user_states[phone_number]
         step = state['step']
-        
+
         if step == 'name':
             state['data']['child_name'] = message
             state['step'] = 'age'
             return """👶 *Qual a idade da criança?*
 
 (Ex: 3 anos, 5 anos e 6 meses, etc.)"""
-        
+
         elif step == 'age':
             state['data']['child_age'] = message
             state['step'] = 'reason'
             return """🔍 *Qual o motivo da consulta?*
 
 (Ex: primeira consulta, dor de dente, limpeza, etc.)"""
-        
+
         elif step == 'reason':
             state['data']['reason'] = message
             state['step'] = 'period'
@@ -159,11 +166,10 @@ Digite uma das opções:
 • Manhã
 • Tarde
 • Qualquer horário"""
-        
+
         elif step == 'period':
             state['data']['preferred_period'] = message
-            
-            # Salva o agendamento no banco
+
             appointment = Appointment(
                 phone_number=phone_number,
                 child_name=state['data']['child_name'],
@@ -173,10 +179,9 @@ Digite uma das opções:
             )
             db.session.add(appointment)
             db.session.commit()
-            
-            # Remove o estado do usuário
+
             del self.user_states[phone_number]
-            
+
             return f"""✅ *AGENDAMENTO SOLICITADO*
 
 📋 *Resumo:*
@@ -189,7 +194,7 @@ Digite uma das opções:
 
 🏠 Voltar ao menu: digite *menu*
 📞 Emergências: (16) 99269-2383 ou (16) 99212-0514"""
-    
+
     def get_team_contact(self):
         """Informações para falar com a equipe"""
         return """👥 *FALAR COM A EQUIPE*
@@ -209,7 +214,7 @@ Sábado: 8h às 12h
 (16) 99269-2383 ou (16) 99212-0514
 
 🏠 Voltar ao menu: digite *menu*"""
-    
+
     def get_emergency_contact(self):
         """Contato para emergências"""
         return """🚨 *EMERGÊNCIAS 24H*
@@ -225,24 +230,25 @@ Se seu filho está com dor ou desconforto, entre em contato imediatamente:
 🏥 Nossa equipe está preparada para atender emergências odontológicas a qualquer hora.
 
 🏠 Voltar ao menu: digite *menu*"""
-    
-    def get_after_hours_message(self):
-        """Mensagem para horário fora de expediente"""
-        return """🌙 *FORA DO HORÁRIO DE ATENDIMENTO*
+
+    def get_after_hours_message(self, action="atendimento"):
+        """Mensagem para horário fora de expediente, personalizada pela ação."""
+        message = f"""🌙 *FORA DO HORÁRIO DE ATENDIMENTO*
 
 Obrigado por entrar em contato com a Dentinhos de Leite Odontologia!
 
-🕐 *Nosso horário de atendimento:*
+Nosso horário para {action} é:
 Segunda a Sexta: 8h às 18h
 Sábado: 8h às 12h
 
-📱 Retornaremos seu contato no próximo horário comercial.
+Por favor, entre em contato durante este horário, ou se preferir, deixe sua mensagem e retornaremos assim que possível.
 
-🚨 *Para emergências 24h:*
+🚨 *Para emergências 24h, ligue:*
 📞 (16) 99269-2383 ou (16) 99212-0514
 
-Digite *menu* para ver nossas opções."""
-    
+Digite *menu* para ver outras opções."""
+        return message
+
     def get_default_response(self):
         """Resposta padrão quando não entende a mensagem"""
         return """❓ *Não entendi sua mensagem*
@@ -256,20 +262,16 @@ Digite *menu* para ver as opções disponíveis ou escolha uma das opções:
 5️⃣ Falar com equipe
 
 🚨 Emergências: (16) 99269-2383 ou (16) 99212-0514"""
-    
+
     def is_business_hours(self):
         """Verifica se está no horário de atendimento"""
         now = datetime.now()
-        weekday = now.weekday()  # 0 = segunda, 6 = domingo
+        weekday = now.weekday()
         hour = now.hour
-        
-        # Segunda a sexta: 8h às 18h
-        if weekday < 5:  # Segunda a sexta
+
+        if weekday < 5:
             return 8 <= hour < 18
-        # Sábado: 8h às 12h
-        elif weekday == 5:  # Sábado
+        elif weekday == 5:
             return 8 <= hour < 12
-        # Domingo: fechado
         else:
             return False
-
