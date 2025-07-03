@@ -1,5 +1,5 @@
 # src/models/conversation.py
-# Versão 2.0 - Fase 2: Adicionada a tabela Patient
+# Versão 2.0 - Fase 3: Adicionada a tabela Schedule
 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -48,7 +48,6 @@ class Appointment(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-# --- NOSSA NOVA TABELA DE PACIENTES ---
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
@@ -58,6 +57,9 @@ class Patient(db.Model):
     address = db.Column(db.String(200), nullable=True)
     medical_history = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relação com as consultas
+    schedules = db.relationship('Schedule', backref='patient', lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -69,4 +71,24 @@ class Patient(db.Model):
             'address': self.address,
             'medical_history': self.medical_history,
             'created_at': self.created_at.isoformat()
+        }
+
+# --- NOSSA NOVA TABELA DE AGENDAMENTOS ---
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': f"{self.title} ({self.patient.full_name})", # Mostra o nome do paciente no evento
+            'start': self.start_time.isoformat(),
+            'end': self.end_time.isoformat(),
+            'notes': self.notes,
+            'patient_name': self.patient.full_name
         }
