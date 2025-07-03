@@ -12,7 +12,6 @@ from wtforms import StringField, PasswordField, DateField, TextAreaField, Select
 
 
 
-
 system_bp = Blueprint('system', __name__)
 
 # --- Configuração do Login ---
