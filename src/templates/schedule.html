@@ -63,38 +63,13 @@
     var calendarEl = document.getElementById('calendar');
     var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
     var form = document.querySelector('#scheduleModal form');
+    var startTimeInput = document.getElementById('start_time');
+    var endTimeInput = document.getElementById('end_time');
 
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      locale: 'pt-br',
-      buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-      },
-      events: {{ events_json | safe }},
-      
-      // Clicar num dia para criar um novo evento
-      dateClick: function(info) {
-        form.action = "{{ url_for('system.add_schedule') }}";
-        document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
-        form.reset(); // Limpa o formulário
-        
-        // Sugere data e hora de início
-        let startTime = info.dateStr + 'T09:00';
-        document.getElementById('start_time').value = startTime;
-        
-        scheduleModal.show();
-      },
-
-      // Clicar num evento existente para ver os detalhes (futura funcionalidade)
-      eventClick: function(info) {
-        alert('Evento: ' + info.event.title + '\\nNotas: ' + (info.event.extendedProps.notes || 'Nenhuma'));
-        // No futuro, podemos abrir o modal aqui para editar ou apagar o evento.
-      }
-    });
-    calendar.render();
-  });
-</script>
-{% endblock %}
+    // --- LÓGICA PARA AUTO-PREENCHER O HORÁRIO DE FIM ---
+    startTimeInput.addEventListener('change', function() {
+      if (this.value) {
+        let startDate = new Date(this.value);
+        // Adiciona 1 hora à data de início
+        startDate.setHours(startDate.getHours() + 1);
+        // Formata para o formato YYYY-MM-DDTHH:MM
