@@ -4,6 +4,9 @@ from src.models.conversation import db, Patient
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, DateField, TextAreaField
 from wtforms.validators import DataRequired, Email, Optional
+import json
+from src.models.conversation import db, Patient, Schedule
+
 
 
 system_bp = Blueprint('system', __name__)
@@ -105,6 +108,21 @@ def delete_patient(patient_id):
 
 @login_manager.unauthorized_handler
 # ... (resto do ficheiro) ...
+
+# ... (código da rota delete_patient) ...
+
+# --- ROTA DA AGENDA ---
+@system_bp.route('/agenda')
+@login_required
+def schedule():
+    all_schedules = Schedule.query.all()
+    events = [s.to_dict() for s in all_schedules]
+    events_json = json.dumps(events)
+    return render_template('schedule.html', events_json=events_json)
+
+@login_manager.unauthorized_handler
+# ... (resto do ficheiro) ...
+
 
 @login_manager.unauthorized_handler
 def unauthorized():
