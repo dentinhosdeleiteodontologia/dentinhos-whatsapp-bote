@@ -63,13 +63,65 @@
     var calendarEl = document.getElementById('calendar');
     var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
     var form = document.querySelector('#scheduleModal form');
-    var startTimeInput = document.getElementById('start_time');
-    var endTimeInput = document.getElementById('end_time');
 
-    // --- LÓGICA PARA AUTO-PREENCHER O HORÁRIO DE FIM ---
-    startTimeInput.addEventListener('change', function() {
-      if (this.value) {
-        let startDate = new Date(this.value);
-        // Adiciona 1 hora à data de início
-        startDate.setHours(startDate.getHours() + 1);
-        // Formata para o formato YYYY-MM-DDTHH:MM
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      locale: 'pt-br',
+      timeZone: 'America/Sao_Paulo', // Define o fuso horário para Brasília
+      buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      events: {{ events_json | safe }},
+      
+      // --- NOVA CONFIGURAÇÃO DE FORMATAÇÃO DE DATA ---
+      eventTimeFormat: { // Formato da hora dentro do evento
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      },
+      
+      // Clicar num dia para criar um novo evento
+      dateClick: function(info) {
+        form.action = "{{ url_for('system.add_schedule') }}";
+        document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
+        form.reset();
+        
+        // --- LÓGICA MELHORADA PARA DATA E HORA ---
+        const startDate = new Date(info.dateStr + 'T09:00:00');
+        
+        // Calcula a data final (1 hora depois)
+        const endDate = new Date(startDate.getTime());
+        endDate.setHours(startDate.getHours() + 1);
+
+        // Formata para o formato que o input 'datetime-local' espera (YYYY-MM-DDTHH:mm)
+        const formatForInput = (date) => {
+            const pad = (num) => num.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        document.getElementById('start_time').value = formatForInput(startDate);
+        document.getElementById('end_time').value = formatForInput(endDate); // Preenche a hora final
+        
+        scheduleModal.show();
+      },
+
+      // Clicar num evento existente para ver os detalhes
+      eventClick: function(info) {
+        const startTime = new Date(info.event.start).toLocaleString('pt-BR');
+        const endTime = new Date(info.event.end).toLocaleString('pt-BR');
+        
+        alert(
+          'Consulta: ' + info.event.title +
+          '\\nInício: ' + startTime +
+          '\\nFim: ' + endTime +
+          '\\nNotas: ' + (info.event.extendedProps.notes || 'Nenhuma')
+        );
+      }
+    });
+    calendar.render();
+  });
+</script>
+{% endblock %}
