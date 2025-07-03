@@ -28,6 +28,14 @@ class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
 
+class PatientForm(FlaskForm):
+    full_name = StringField('Nome Completo', validators=[DataRequired()])
+    phone_number = StringField('Nº de WhatsApp (ex: 55169...)' , validators=[DataRequired()])
+    email = StringField('Email', validators=[Optional(), Email()])
+    birth_date = DateField('Data de Nascimento', validators=[Optional()])
+    address = StringField('Endereço', validators=[Optional()])
+    medical_history = TextAreaField('Anamnese / Histórico Médico', validators=[Optional()])
+
 # --- Rotas do Sistema ---
 
 @system_bp.route('/login', methods=['GET', 'POST'])
@@ -58,3 +66,31 @@ def list_patients():
 @login_manager.unauthorized_handler
 def unauthorized():
     return redirect(url_for('system.login'))
+@system_bp.route('/pacientes/novo', methods=['GET', 'POST'])
+@login_required
+def add_patient():
+    form = PatientForm()
+    if form.validate_on_submit():
+        # Verifica se o número de telefone já existe
+        existing_patient = Patient.query.filter_by(phone_number=form.phone_number.data).first()
+        if existing_patient:
+            flash('Já existe um paciente com este número de telefone.', 'danger')
+            return render_template('patient_form.html', form=form, title="Adicionar Novo Paciente")
+
+        # Cria uma nova instância do Paciente com os dados do formulário
+        new_patient = Patient(
+            full_name=form.full_name.data,
+            phone_number=form.phone_number.data,
+            email=form.email.data,
+            birth_date=form.birth_date.data,
+            address=form.address.data,
+            medical_history=form.medical_history.data
+        )
+           # Adiciona ao banco de dados
+        db.session.add(new_patient)
+        db.session.commit()
+        
+        flash(f'Paciente "{form.full_name.data}" adicionado com sucesso!', 'success')
+        return redirect(url_for('system.list_patients'))
+        
+    return render_template('patient_form.html', form=form, title="Adicionar Novo Paciente")
