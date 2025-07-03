@@ -6,6 +6,7 @@ from wtforms import StringField, PasswordField, DateField, TextAreaField
 from wtforms.validators import DataRequired, Email, Optional
 import json
 from src.models.conversation import db, Patient, Schedule
+from src.main import csrf
 
 from wtforms import StringField, PasswordField, DateField, TextAreaField, SelectField, DateTimeField
 # ...
@@ -134,6 +135,7 @@ def delete_patient(patient_id):
 
 # --- NOVA ROTA PARA ADICIONAR CONSULTAS ---
 @system_bp.route('/agenda/novo', methods=['POST']) # Apenas POST, pois será chamado por um formulário
+@csrf.exempt
 @login_required
 def add_schedule():
     form = ScheduleForm()
