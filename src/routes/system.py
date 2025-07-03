@@ -1,5 +1,5 @@
 # src/routes/system.py
-# Versão 1.0 - Completa e Refatorada
+# Versão 1.1 - Simplificada (Login gerenciado pelo main.py)
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
