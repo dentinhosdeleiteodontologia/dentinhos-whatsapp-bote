@@ -2,14 +2,13 @@
 {% block title %}Login - Dentinhos System{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-5">
   <div class="col-md-6 col-lg-4">
     <div class="card shadow-sm">
       <div class="card-body p-4">
-        <h1 class="card-title text-center mb-4">🦷 Login</h1>
+        <h1 class="card-title text-center mb-4">🦷 Dentinhos System</h1>
         
-        <!-- AQUI ESTÁ A CORREÇÃO PRINCIPAL: action aponta para 'login' e não 'system.login' -->
-        <form method="POST" action="{{ url_for('login') }}" novalidate>
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
           {{ form.hidden_tag() }}
           <div class="mb-3">
             {{ form.username.label(class="form-label") }}
