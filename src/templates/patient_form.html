@@ -1,7 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}{{ title }}{% endblock %}
+
 {% block content %}
   <h1>{{ title }}</h1>
+  <hr>
   <form method="POST" novalidate>
     {{ form.hidden_tag() }}
     <div class="row">
@@ -21,7 +23,7 @@
       </div>
       <div class="col-md-6 mb-3">
         {{ form.birth_date.label(class="form-label") }}
-        {{ form.birth_date(class="form-control") }}
+        {{ form.birth_date(class="form-control", type="date") }}
       </div>
     </div>
     <div class="mb-3">
