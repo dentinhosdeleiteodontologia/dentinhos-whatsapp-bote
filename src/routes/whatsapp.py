@@ -1,5 +1,5 @@
 # src/routes/whatsapp.py
-# Correção: Reverter a rota do webhook para o padrão /webhook
+# Solução Final: Manter a rota /api/whatsapp/webhook e adicionar logs detalhados.
 
 from flask import Blueprint, request, jsonify
 from src.models.conversation import db, Conversation, Appointment
@@ -8,41 +8,51 @@ from src.services.whatsapp_service import send_whatsapp_message
 import json
 import os
 
-# A alteração está aqui: removemos o url_prefix para que as rotas sejam registadas na raiz.
-whatsapp_bp = Blueprint('whatsapp', __name__)
+# 1. GARANTIR O PREFIXO CORRETO
+whatsapp_bp = Blueprint('whatsapp', __name__, url_prefix='/api/whatsapp')
 bot_logic = BotLogic()
 
-# Esta rota agora será /webhook
+# A rota final será: /api/whatsapp/webhook
 @whatsapp_bp.route('/webhook', methods=['GET'])
 def verify_webhook():
-    """Verificação do webhook do WhatsApp Business API"""
-    # Usamos um valor padrão seguro caso a variável de ambiente não exista
-    verify_token = os.environ.get('VERIFY_TOKEN', 'DENTINHOS_TOKEN_SEGURO_FALLBACK')
+    """Verificação do webhook do WhatsApp Business API com logs detalhados."""
+    print("INFO: Recebido pedido de verificação de webhook (GET).")
     
+    verify_token_esperado = os.environ.get('VERIFY_TOKEN')
+    
+    # 2. LOGS DETALHADOS
+    if not verify_token_esperado:
+        print("ERRO CRÍTICO: A variável de ambiente VERIFY_TOKEN não está configurada na Render!")
+        return "Erro de configuração interna do servidor.", 500
+
     mode = request.args.get('hub.mode')
-    token = request.args.get('hub.verify_token')
+    token_recebido = request.args.get('hub.verify_token')
     challenge = request.args.get('hub.challenge')
     
-    if mode and token:
-        if mode == 'subscribe' and token == verify_token:
-            print("SUCESSO: Webhook verificado com sucesso!")
+    print(f"INFO: Modo recebido: '{mode}'")
+    print(f"INFO: Token recebido: '{token_recebido}'")
+    print(f"INFO: Token esperado: '{verify_token_esperado}'")
+    
+    if mode and token_recebido:
+        if mode == 'subscribe' and token_recebido == verify_token_esperado:
+            print("SUCESSO: Webhook verificado com sucesso! Retornando o challenge.")
             return challenge
         else:
-            print(f"FALHA: Webhook não verificado. Token recebido: '{token}', Token esperado: '{verify_token}'")
+            print("FALHA: A verificação do webhook falhou. O modo ou o token não correspondem.")
             return "Token de verificação inválido", 403
     
+    print("FALHA: Parâmetros 'hub.mode' ou 'hub.verify_token' em falta no pedido.")
     return "Parâmetros de verificação em falta", 400
 
-# Esta rota agora será /webhook
+# A rota final será: /api/whatsapp/webhook
 @whatsapp_bp.route('/webhook', methods=['POST'])
 def handle_webhook():
     """Processa mensagens recebidas do WhatsApp"""
     try:
         data = request.get_json()
-        
         if not data:
-            print("ERRO: Webhook recebido sem dados (payload vazio).")
-            return jsonify({"status": "error", "message": "Dados inválidos"}), 400
+            print("AVISO: Webhook (POST) recebido sem dados.")
+            return jsonify({"status": "ok"}), 200 # Responde 200 para não ser reenviado
         
         if 'entry' in data:
             for entry in data['entry']:
@@ -54,7 +64,7 @@ def handle_webhook():
         return jsonify({"status": "success"}), 200
         
     except Exception as e:
-        print(f"ERRO CRÍTICO ao processar webhook: {str(e)}")
+        print(f"ERRO CRÍTICO ao processar webhook (POST): {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def process_message(message_data):
@@ -85,13 +95,13 @@ def process_message(message_data):
                     db.session.commit()
                     
                     send_whatsapp_message(phone_number, response)
-                    print(f"Resposta enviada para {phone_number}.")
+                    print(f"INFO: Resposta enviada para {phone_number}.")
                 
     except Exception as e:
         print(f"ERRO ao processar mensagem individual: {str(e)}")
 
 # --- Rotas de Administração (permanecem as mesmas) ---
-
+# ... (código das rotas /conversations e /appointments)
 @whatsapp_bp.route('/conversations', methods=['GET'])
 def get_conversations():
     conversations = Conversation.query.order_by(Conversation.timestamp.desc()).all()
