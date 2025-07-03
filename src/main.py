@@ -4,6 +4,7 @@ from flask_cors import CORS
 from src.models.conversation import db
 from src.routes.whatsapp import whatsapp_bp
 from src.routes.system import system_bp, login_manager # Importamos as novas partes
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 CORS(app)
