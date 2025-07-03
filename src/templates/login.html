@@ -1,21 +1,30 @@
 {% extends "layout.html" %}
-{% block title %}Login{% endblock %}
+{% block title %}Login - Dentinhos System{% endblock %}
+
 {% block content %}
-  <div class="row justify-content-center">
-    <div class="col-md-4">
-      <h1 class="text-center">Acesso ao Sistema</h1>
-      <form method="POST" action="{{ url_for('system.login') }}">
-        {{ form.hidden_tag() }}
-        <div class="mb-3">
-          <label for="username" class="form-label">Usuário</label>
-          {{ form.username(class="form-control") }}
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">Senha</label>
-          {{ form.password(class="form-control") }}
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Entrar</button>
-      </form>
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="card-title text-center mb-4">🦷 Login</h1>
+        
+        <!-- AQUI ESTÁ A CORREÇÃO PRINCIPAL: action aponta para 'login' e não 'system.login' -->
+        <form method="POST" action="{{ url_for('login') }}" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control form-control-lg") }}
+          </div>
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control form-control-lg") }}
+          </div>
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
+</div>
 {% endblock %}
