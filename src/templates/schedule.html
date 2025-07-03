@@ -111,24 +111,17 @@
         document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
         addForm.reset();
         
+        // --- JAVASCRIPT SIMPLIFICADO E CORRETO ---
         const startDate = new Date(info.dateStr);
-        if (!info.allDay) {
-            startDate.setHours(new Date(info.dateStr).getHours(), new Date(info.dateStr).getMinutes());
-        } else {
-            startDate.setHours(9, 0);
-        }
         
-        const endDate = new Date(startDate.getTime());
-        endDate.setHours(startDate.getHours() + 1);
-
-        // --- FUNÇÃO DE FORMATAÇÃO CORRIGIDA ---
+        // Formata a data para o formato que o input 'datetime-local' espera
         const formatForInput = (date) => {
-            // Cria uma data "falsa" deslocada pelo fuso horário para enganar o toISOString()
-            const offset = date.getTimezoneOffset() * 60000;
-            const adjustedDate = new Date(date.getTime() - offset);
-            // Converte para ISO e remove os segundos e o 'Z'
-            return adjustedDate.toISOString().substring(0, 16);
+            const pad = (num) => num.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
+
+        // Calcula a data final (1 hora depois)
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
         document.getElementById('start_time').value = formatForInput(startDate);
         document.getElementById('end_time').value = formatForInput(endDate);
