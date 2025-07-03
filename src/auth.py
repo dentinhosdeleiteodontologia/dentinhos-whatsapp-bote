@@ -1,5 +1,5 @@
 # src/auth.py
-# Novo Módulo de Autenticação
+# Versão 1.4 - Correção Final da Rota de Login
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
@@ -10,6 +10,9 @@ from wtforms.validators import DataRequired
 # --- Configuração do Login ---
 auth_bp = Blueprint('auth', __name__)
 login_manager = LoginManager()
+
+# AQUI ESTÁ A CORREÇÃO PRINCIPAL:
+# A "vista de login" (login_view) deve apontar para a rota dentro deste blueprint: 'auth.login'
 login_manager.login_view = 'auth.login'
 login_manager.login_message = "Por favor, faça o login para aceder a esta página."
 login_manager.login_message_category = "info"
