@@ -1,17 +1,16 @@
 # main.py
-# Solução Definitiva: Desativar a proteção CSRF para o blueprint do webhook.
+# TESTE DE DIAGNÓSTICO: Desativar completamente o CSRF para isolar o problema.
 
 import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect  # Importamos a proteção CSRF
+# from flask_wtf.csrf import CSRFProtect # <-- PASSO 1: Comentar a importação
 
 # --- Configuração da Aplicação ---
 app = Flask(__name__)
 
-# Configuração de Banco de Dados (com fallback para Heroku)
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -27,22 +26,18 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'auth.login'
 login_manager.login_message = "Por favor, faça login para aceder a esta página."
 
-# Inicializa a proteção CSRF
-csrf = CSRFProtect(app)
+# --- PASSO 2: Comentar a inicialização e a isenção do CSRF ---
+# csrf = CSRFProtect(app)
 
 # --- Modelos e Blueprints ---
-# Importar modelos aqui para evitar importações circulares
 from src.models.user import User
 from src.models.conversation import Conversation, Patient, Schedule
 
-# Importar e registar os blueprints
 from src.routes.auth import auth_bp
 from src.routes.system import system_bp
 from src.routes.whatsapp import whatsapp_bp
 
-# --- AQUI ESTÁ A CORREÇÃO CRUCIAL ---
-# Dizemos ao CSRF para ignorar todas as rotas dentro do blueprint do WhatsApp.
-csrf.exempt(whatsapp_bp)
+# csrf.exempt(whatsapp_bp) # <-- PASSO 3: Comentar a isenção
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(system_bp)
@@ -62,7 +57,7 @@ def home():
 def health_check():
     return "OK", 200
 
-# --- Criação do Banco de Dados (se necessário) ---
+# --- Criação do Banco de Dados ---
 with app.app_context():
     db.create_all()
 
