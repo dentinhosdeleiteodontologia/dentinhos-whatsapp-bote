@@ -1,5 +1,5 @@
 # src/routes/system.py
-# Módulo do Sistema de Gestão - Fase 4: Apagar Consultas
+# Módulo do Sistema de Gestão - Fase 4.2: Correção Definitiva de Fuso Horário
 
 import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash
@@ -7,7 +7,7 @@ from flask_login import login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateField, TextAreaField, SelectField, DateTimeField
 from wtforms.validators import DataRequired, Email, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
 from src.models.conversation import db, Patient, Schedule
@@ -105,14 +105,20 @@ def add_schedule():
     form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
     
     if form.validate_on_submit():
-        start_time_br = BR_TIMEZONE.localize(form.start_time.data)
-        end_time_br = BR_TIMEZONE.localize(form.end_time.data)
+        # --- LÓGICA DE FUSO HORÁRIO CORRIGIDA E CENTRALIZADA AQUI ---
+        # 1. Pega a data "naïve" (sem fuso) que o formulário envia.
+        naive_start_time = form.start_time.data
+        naive_end_time = form.end_time.data
+
+        # 2. Anexa o fuso horário de Brasília a essa data.
+        aware_start_time = BR_TIMEZONE.localize(naive_start_time)
+        aware_end_time = BR_TIMEZONE.localize(naive_end_time)
 
         new_schedule = Schedule(
             patient_id=form.patient_id.data,
             title=form.title.data,
-            start_time=start_time_br,
-            end_time=end_time_br,
+            start_time=aware_start_time, # Salva a data com o fuso correto
+            end_time=aware_end_time,     # Salva a data com o fuso correto
             notes=form.notes.data
         )
         db.session.add(new_schedule)
@@ -125,7 +131,6 @@ def add_schedule():
 
     return redirect(url_for('system.schedule'))
 
-# --- NOSSA NOVA ROTA PARA APAGAR CONSULTAS ---
 @system_bp.route('/agenda/apagar/<int:schedule_id>', methods=['POST'])
 @login_required
 def delete_schedule(schedule_id):
