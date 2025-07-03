@@ -28,14 +28,15 @@
           <!-- Botão de Editar -->
           <a href="{{ url_for('system.edit_patient', patient_id=patient.id) }}" class="btn btn-primary btn-sm">Editar</a>
           
-          <!-- Formulário para o botão de Apagar -->
-          <form method="POST" action="{{ url_for('system.delete_patient', patient_id=patient.id) }}" style="display:inline;" onsubmit="return confirm('Tem a certeza que quer apagar este paciente? Esta ação não pode ser desfeita.');">
-            <!-- Token de segurança CSRF (forma correta para este contexto) -->
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger btn-sm">
-                Apagar
-            </button>
-          </form>
+       <!-- Formulário para o botão de Apagar -->
+<form method="POST" action="{{ url_for('system.delete_patient') }}" style="display:inline;" onsubmit="return confirm('Tem a certeza que quer apagar este paciente? Esta ação não pode ser desfeita.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="patient_id" value="{{ patient.id }}"> <!-- LINHA ADICIONADA -->
+    <button type="submit" class="btn btn-danger btn-sm">
+        Apagar
+    </button>
+</form>
+
         </td>
       </tr>
       {% else %}
