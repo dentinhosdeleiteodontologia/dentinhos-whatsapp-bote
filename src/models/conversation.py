@@ -72,3 +72,33 @@ class Patient(db.Model):
             'address': self.address,
             'created_at': self.created_at.isoformat()
         }
+# ... (código da classe Patient) ...
+
+# --- NOSSA NOVA TABELA DE AGENDA ---
+
+class Schedule(db.Model):
+    __tablename__ = 'schedule'
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Chave estrangeira para ligar a consulta a um paciente
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    patient = db.relationship('Patient', backref=db.backref('schedules', lazy=True))
+
+    title = db.Column(db.String(200), nullable=False) # Ex: "Consulta de Avaliação - João Silva"
+    start_time = db.Column(db.DateTime, nullable=False) # Data e hora de início
+    end_time = db.Column(db.DateTime, nullable=False) # Data e hora de fim
+    status = db.Column(db.String(30), default='Marcado') # Marcado, Confirmado, Cancelado, Realizado
+    notes = db.Column(db.Text, nullable=True) # Notas sobre a consulta
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'start': self.start_time.isoformat(),
+            'end': self.end_time.isoformat(),
+            'status': self.status,
+            'patient_id': self.patient_id
+        }
