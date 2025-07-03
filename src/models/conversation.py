@@ -1,4 +1,5 @@
-# Este é o NOVO CONTEÚDO para o ficheiro src/models/conversation.py
+# src/models/conversation.py
+# Versão 2.0 - Fase 2: Adicionada a tabela Patient
 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -10,8 +11,8 @@ class Conversation(db.Model):
     phone_number = db.Column(db.String(20), nullable=False)
     message = db.Column(db.Text, nullable=False)
     response = db.Column(db.Text, nullable=True)
-    message_type = db.Column(db.String(10), default='incoming') # incoming or outgoing
-    status = db.Column(db.String(20), default='received') # received, processed, failed
+    message_type = db.Column(db.String(10), default='incoming')
+    status = db.Column(db.String(20), default='received')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -28,11 +29,11 @@ class Conversation(db.Model):
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     phone_number = db.Column(db.String(20), nullable=False)
-    child_name = db.Column(db.String(100), nullable=False)
+    child_name = db.Column(db.String(100), nullable=True)
     child_age = db.Column(db.String(50), nullable=True)
     reason = db.Column(db.Text, nullable=True)
     preferred_period = db.Column(db.String(50), nullable=True)
-    status = db.Column(db.String(20), default='pending') # pending, confirmed, cancelled
+    status = db.Column(db.String(20), default='pending')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -47,19 +48,16 @@ class Appointment(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-# --- NOSSA NOVA TABELA COMEÇA AQUI ---
-
+# --- NOSSA NOVA TABELA DE PACIENTES ---
 class Patient(db.Model):
-    __tablename__ = 'patient' # Define o nome da tabela explicitamente
-
     id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(150), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=False, unique=True) # unique=True garante que não há dois pacientes com o mesmo número
-    email = db.Column(db.String(120), unique=True, nullable=True) # O email é opcional
-    birth_date = db.Column(db.Date, nullable=True) # Guardar como data, não como texto
-    medical_history = db.Column(db.Text, nullable=True) # Campo para a anamnese inicial
-    address = db.Column(db.String(250), nullable=True) # Endereço do paciente
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) # Data de registo do paciente
+    full_name = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False, unique=True)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    birth_date = db.Column(db.Date, nullable=True)
+    address = db.Column(db.String(200), nullable=True)
+    medical_history = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -68,37 +66,7 @@ class Patient(db.Model):
             'phone_number': self.phone_number,
             'email': self.email,
             'birth_date': self.birth_date.isoformat() if self.birth_date else None,
-            'medical_history': self.medical_history,
             'address': self.address,
+            'medical_history': self.medical_history,
             'created_at': self.created_at.isoformat()
-        }
-# ... (código da classe Patient) ...
-
-# --- NOSSA NOVA TABELA DE AGENDA ---
-
-class Schedule(db.Model):
-    __tablename__ = 'schedule'
-
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Chave estrangeira para ligar a consulta a um paciente
-    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
-    patient = db.relationship('Patient', backref=db.backref('schedules', lazy=True))
-
-    title = db.Column(db.String(200), nullable=False) # Ex: "Consulta de Avaliação - João Silva"
-    start_time = db.Column(db.DateTime, nullable=False) # Data e hora de início
-    end_time = db.Column(db.DateTime, nullable=False) # Data e hora de fim
-    status = db.Column(db.String(30), default='Marcado') # Marcado, Confirmado, Cancelado, Realizado
-    notes = db.Column(db.Text, nullable=True) # Notas sobre a consulta
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'start': self.start_time.isoformat(),
-            'end': self.end_time.isoformat(),
-            'status': self.status,
-            'patient_id': self.patient_id
         }
