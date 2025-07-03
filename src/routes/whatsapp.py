@@ -1,15 +1,14 @@
 # src/routes/whatsapp.py
-# Solução 4: Blindar o processamento de POST e adicionar logs de payload.
+# TESTE DE DIAGNÓSTICO EXTREMO: Simplificar o webhook POST ao máximo.
 
 from flask import Blueprint, request, jsonify
-from src.models.conversation import db, Conversation, Appointment
-from src.services.bot_logic import BotLogic
-from src.services.whatsapp_service import send_whatsapp_message
-import json
 import os
+import json # Manter para depuração, se necessário
+
+# Não vamos importar BotLogic, Conversation, Appointment, send_whatsapp_message
+# para garantir que nada interfere.
 
 whatsapp_bp = Blueprint('whatsapp', __name__, url_prefix='/api/whatsapp')
-bot_logic = BotLogic()
 
 @whatsapp_bp.route('/webhook', methods=['GET'])
 def verify_webhook():
@@ -36,90 +35,38 @@ def verify_webhook():
 
 @whatsapp_bp.route('/webhook', methods=['POST'])
 def handle_webhook():
-    """Processa mensagens recebidas do WhatsApp (versão à prova de falhas)."""
-    print("INFO: Recebido pedido POST em /webhook.")
+    """TESTE: Processa mensagens recebidas do WhatsApp com o mínimo de lógica."""
+    print("INFO: [TESTE EXTREMO] Recebido pedido POST em /webhook.")
     
-    # 1. Obter os dados brutos, sem assumir que são JSON.
-    raw_data = request.get_data()
-    if not raw_data:
-        print("AVISO: Pedido POST recebido com corpo vazio.")
-        return jsonify({"status": "ok", "message": "Corpo vazio"}), 200
-
-    # 2. Logar os dados brutos para depuração.
-    print(f"DEBUG: Dados brutos recebidos (raw): {raw_data.decode('utf-8')}")
-
-    # 3. Tentar converter para JSON de forma segura.
+    # Tentar obter o corpo do pedido, mas sem processá-lo.
     try:
-        data = json.loads(raw_data)
-    except json.JSONDecodeError:
-        print("ERRO: Falha ao descodificar JSON do pedido POST.")
-        # Retornamos 200 OK para que o WhatsApp não continue a enviar um pedido inválido.
-        return jsonify({"status": "error", "message": "JSON mal formatado"}), 200
-
-    # 4. Processar os dados JSON.
-    try:
-        if 'entry' in data:
-            for entry in data['entry']:
-                if 'changes' in entry:
-                    for change in entry['changes']:
-                        if change.get('field') == 'messages':
-                            process_message(change['value'])
-        
-        print("INFO: Pedido POST processado com sucesso.")
-        return jsonify({"status": "success"}), 200
-        
+        raw_data = request.get_data()
+        print(f"DEBUG: [TESTE EXTREMO] Dados brutos recebidos (tamanho: {len(raw_data)} bytes).")
+        # Opcional: imprimir os primeiros 500 caracteres para depuração
+        # print(f"DEBUG: [TESTE EXTREMO] Conteúdo: {raw_data.decode('utf-8')[:500]}")
     except Exception as e:
-        print(f"ERRO CRÍTICO ao processar a lógica do webhook: {str(e)}")
-        return jsonify({"status": "error", "message": "Erro interno no processamento"}), 500
+        print(f"ERRO: [TESTE EXTREMO] Falha ao obter dados brutos: {str(e)}")
+        # Ainda assim, tentar retornar 200 OK para não ser reenviado
+        return jsonify({"status": "error", "message": "Falha ao ler dados"}), 200
 
-def process_message(message_data):
-    # (Esta função permanece a mesma)
-    try:
-        if 'messages' in message_data:
-            for message in message_data['messages']:
-                if message.get('type') != 'text':
-                    continue
+    # Retornar 200 OK imediatamente, sem qualquer outra lógica.
+    print("INFO: [TESTE EXTREMO] Retornando 200 OK imediatamente.")
+    return jsonify({"status": "success", "message": "Pedido recebido e ignorado (teste)"}), 200
 
-                phone_number = message['from']
-                message_text = message.get('text', {}).get('body', '')
-                
-                conversation = Conversation(
-                    phone_number=phone_number,
-                    message=message_text,
-                    message_type='incoming',
-                    status='received'
-                )
-                db.session.add(conversation)
-                db.session.commit()
-                
-                response = bot_logic.process_message(message_text, phone_number)
-                
-                if response:
-                    conversation.response = response
-                    conversation.status = 'processed'
-                    db.session.commit()
-                    
-                    send_whatsapp_message(phone_number, response)
-                    print(f"INFO: Resposta enviada para {phone_number}.")
-                
-    except Exception as e:
-        print(f"ERRO ao processar mensagem individual: {str(e)}")
+# --- Rotas de Administração (Manter para não quebrar a aplicação, mas não serão testadas) ---
+# Você pode manter as rotas get_conversations, get_appointments, update_appointment_status
+# mas elas não serão afetadas por este teste.
+# Se quiser, pode comentá-las temporariamente para um isolamento ainda maior,
+# mas lembre-se de as reativar depois.
 
-# --- Rotas de Administração (permanecem as mesmas) ---
-@whatsapp_bp.route('/conversations', methods=['GET'])
-def get_conversations():
-    conversations = Conversation.query.order_by(Conversation.timestamp.desc()).all()
-    return jsonify([conv.to_dict() for conv in conversations])
+# @whatsapp_bp.route('/conversations', methods=['GET'])
+# def get_conversations():
+#     return jsonify({"message": "Conversations route disabled for test"})
 
-@whatsapp_bp.route('/appointments', methods=['GET'])
-def get_appointments():
-    appointments = Appointment.query.order_by(Appointment.timestamp.desc()).all()
-    return jsonify([apt.to_dict() for apt in appointments])
+# @whatsapp_bp.route('/appointments', methods=['GET'])
+# def get_appointments():
+#     return jsonify({"message": "Appointments route disabled for test"})
 
-@whatsapp_bp.route('/appointments/<int:appointment_id>/status', methods=['PUT'])
-def update_appointment_status(appointment_id):
-    data = request.get_json()
-    appointment = Appointment.query.get_or_404(appointment_id)
-    appointment.status = data.get('status', appointment.status)
-    db.session.commit()
-    return jsonify(appointment.to_dict())
+# @whatsapp_bp.route('/appointments/<int:appointment_id>/status', methods=['PUT'])
+# def update_appointment_status(appointment_id):
+#     return jsonify({"message": "Appointment status route disabled for test"})
