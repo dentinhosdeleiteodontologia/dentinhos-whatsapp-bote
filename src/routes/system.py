@@ -145,34 +145,24 @@ def delete_patient():
 
 # --- Rotas da Agenda ---
 
+# No ficheiro src/routes/system.py
+
+# SUBSTITUA a função schedule() inteira por esta:
 @system_bp.route('/agenda')
 @login_required
 def schedule():
+    # 1. Busca todos os agendamentos para exibir no calendário
     all_schedules = Schedule.query.all()
     events = [s.to_dict() for s in all_schedules]
-    all_patients = Patient.query.order_by('full_name').all()
+    events_json = json.dumps(events)
+    
+    # 2. Cria uma instância do formulário para o modal
     form = ScheduleForm()
-    form.patient_id.choices = [(p.id, p.full_name) for p in all_patients]
-    return render_template(
-        'schedule.html',
-        events_json=json.dumps(events),
-        patients=all_patients,
-        form=form
-    )
-
-@system_bp.route('/agenda/novo', methods=['POST'])
-@login_required
-def add_schedule():
-    form = ScheduleForm()
+    
+    # 3. Popula a lista de pacientes no formulário
     form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
-    if form.validate_on_submit():
-        new_schedule = Schedule()
-        form.populate_obj(new_schedule)
-        db.session.add(new_schedule)
-        db.session.commit()
-        flash('Consulta agendada com sucesso!', 'success')
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Erro no campo '{getattr(form, field).label.text}': {error}", 'danger')
-    return redirect(url_for('system.schedule'))
+    
+    # 4. Renderiza a página, passando o formulário e os eventos
+    return render_template('schedule.html', 
+                           events_json=events_json, 
+                           form=form)
