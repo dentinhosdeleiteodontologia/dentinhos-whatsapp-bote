@@ -2,7 +2,7 @@
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
   <h1>{{ title }}</h1>
-  <form method="POST" action="">
+  <form method="POST" novalidate>
     {{ form.hidden_tag() }}
     <div class="row">
       <div class="col-md-6 mb-3">
@@ -21,7 +21,7 @@
       </div>
       <div class="col-md-6 mb-3">
         {{ form.birth_date.label(class="form-label") }}
-        {{ form.birth_date(class="form-control", type="date") }}
+        {{ form.birth_date(class="form-control") }}
       </div>
     </div>
     <div class="mb-3">
@@ -30,9 +30,12 @@
     </div>
     <div class="mb-3">
       {{ form.medical_history.label(class="form-label") }}
-      {{ form.medical_history(class="form-control", rows=5) }}
+      {{ form.medical_history(class="form-control", rows="5") }}
     </div>
-    <button type="submit" class="btn btn-success">Salvar Paciente</button>
-    <a href="{{ url_for('system.list_patients') }}" class="btn btn-secondary">Cancelar</a>
+    <hr>
+    <div class="d-flex justify-content-end">
+      <a href="{{ url_for('system.list_patients') }}" class="btn btn-secondary me-2">Cancelar</a>
+      <button type="submit" class="btn btn-success">Salvar Paciente</button>
+    </div>
   </form>
 {% endblock %}
