@@ -17,10 +17,8 @@
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('system.add_schedule') }}">
-        
+      <form method="POST" action="{{ url_for('system.add_schedule') }}" novalidate>
         {{ form.hidden_tag() }}
-
         <div class="modal-header">
           <h5 class="modal-title" id="scheduleModalLabel">Nova Consulta</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -64,35 +62,36 @@
   document.addEventListener('DOMContentLoaded', function( ) {
     var calendarEl = document.getElementById('calendar');
     var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    var form = document.querySelector('#scheduleModal form');
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
+      locale: 'pt-br',
+      buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       events: {{ events_json | safe }},
-      locale: 'pt-br',
-      buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
       
+      // Clicar num dia para criar um novo evento
       dateClick: function(info) {
-        // Limpa o formulário antes de mostrar
-        const form = document.querySelector('#scheduleModal form');
-        form.reset();
+        form.action = "{{ url_for('system.add_schedule') }}";
+        document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
+        form.reset(); // Limpa o formulário
         
         // Sugere data e hora de início
-        let date = new Date(info.dateStr + 'T00:00:00');
-        let year = date.getFullYear();
-        let month = (date.getMonth() + 1).toString().padStart(2, '0');
-        let day = date.getDate().toString().padStart(2, '0');
-        document.getElementById('start_time').value = `${year}-${month}-${day}T09:00`;
+        let startTime = info.dateStr + 'T09:00';
+        document.getElementById('start_time').value = startTime;
         
         scheduleModal.show();
       },
+
+      // Clicar num evento existente para ver os detalhes (futura funcionalidade)
       eventClick: function(info) {
-        alert('Evento: ' + info.event.title + '\nPaciente: ' + info.event.extendedProps.patient_name);
-        // No futuro, podemos abrir o modal para editar o evento aqui.
+        alert('Evento: ' + info.event.title + '\\nNotas: ' + (info.event.extendedProps.notes || 'Nenhuma'));
+        // No futuro, podemos abrir o modal aqui para editar ou apagar o evento.
       }
     });
     calendar.render();
