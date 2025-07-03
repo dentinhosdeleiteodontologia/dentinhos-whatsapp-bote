@@ -1,5 +1,5 @@
 # src/routes/system.py
-# Módulo do Sistema de Gestão - Fase 3
+# Módulo do Sistema de Gestão - Fase 3.1: Refinamento da Agenda
 
 import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash
@@ -7,11 +7,16 @@ from flask_login import login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateField, TextAreaField, SelectField, DateTimeField
 from wtforms.validators import DataRequired, Email, Optional
+from datetime import datetime, timedelta
+import pytz # Biblioteca para fusos horários
 
 from src.models.conversation import db, Patient, Schedule
 
 # --- Blueprint ---
 system_bp = Blueprint('system', __name__, url_prefix='/system')
+
+# --- Fuso Horário de Brasília ---
+BR_TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
 # --- Formulários ---
 class PatientForm(FlaskForm):
@@ -100,8 +105,17 @@ def add_schedule():
     form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
     
     if form.validate_on_submit():
-        new_schedule = Schedule()
-        form.populate_obj(new_schedule)
+        # Converte os tempos para o fuso horário de Brasília antes de salvar
+        start_time_br = BR_TIMEZONE.localize(form.start_time.data)
+        end_time_br = BR_TIMEZONE.localize(form.end_time.data)
+
+        new_schedule = Schedule(
+            patient_id=form.patient_id.data,
+            title=form.title.data,
+            start_time=start_time_br, # Salva com fuso horário
+            end_time=end_time_br,     # Salva com fuso horário
+            notes=form.notes.data
+        )
         db.session.add(new_schedule)
         db.session.commit()
         flash('Consulta agendada com sucesso!', 'success')
