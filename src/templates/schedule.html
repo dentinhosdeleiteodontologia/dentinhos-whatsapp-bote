@@ -17,7 +17,8 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('system.add_schedule') 
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {{ form.hidden_tag() }}
+
 
         <div class="modal-header">
           <h5 class="modal-title" id="scheduleModalLabel">Nova Consulta</h5>
