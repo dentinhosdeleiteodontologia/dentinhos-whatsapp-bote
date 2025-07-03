@@ -1,26 +1,23 @@
 # src/routes/system.py
+# Versão 1.0 - Completa e Refatorada
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, DateField, TextAreaField, SelectField, DateTimeField
+from wtforms import StringField, DateField, TextAreaField, SelectField, DateTimeField
 from wtforms.validators import DataRequired, Email, Optional
 import json
 
 from src.models.conversation import db, Patient, Schedule
 
 # --- Blueprint ---
-system_bp = Blueprint('system', __name__)
+system_bp = Blueprint('system', __name__, url_prefix='/system')
 
 # --- Formulários ---
-class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-
 class PatientForm(FlaskForm):
-    full_name = StringField('Nome Completo', validators=[DataRequired()])
-    phone_number = StringField('Nº de WhatsApp (ex: 55169...)', validators=[DataRequired()])
-    email = StringField('Email', validators=[Optional(), Email()])
+    full_name = StringField('Nome Completo', validators=[DataRequired(message="O nome é obrigatório.")])
+    phone_number = StringField('Nº de WhatsApp (ex: 55169...)', validators=[DataRequired(message="O telefone é obrigatório.")])
+    email = StringField('Email', validators=[Optional(), Email(message="Email inválido.")])
     birth_date = DateField('Data de Nascimento', validators=[Optional()])
     address = StringField('Endereço', validators=[Optional()])
     medical_history = TextAreaField('Anamnese / Histórico Médico', validators=[Optional()])
@@ -49,14 +46,8 @@ def add_patient():
         if existing_patient:
             flash('Já existe um paciente com este número de telefone.', 'danger')
         else:
-            new_patient = Patient(
-                full_name=form.full_name.data,
-                phone_number=form.phone_number.data,
-                email=form.email.data,
-                birth_date=form.birth_date.data,
-                address=form.address.data,
-                medical_history=form.medical_history.data
-            )
+            new_patient = Patient()
+            form.populate_obj(new_patient)
             db.session.add(new_patient)
             db.session.commit()
             flash(f'Paciente "{form.full_name.data}" adicionado com sucesso!', 'success')
@@ -102,13 +93,8 @@ def add_schedule():
     form = ScheduleForm()
     form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
     if form.validate_on_submit():
-        new_schedule = Schedule(
-            patient_id=form.patient_id.data,
-            title=form.title.data,
-            start_time=form.start_time.data,
-            end_time=form.end_time.data,
-            notes=form.notes.data
-        )
+        new_schedule = Schedule()
+        form.populate_obj(new_schedule)
         db.session.add(new_schedule)
         db.session.commit()
         flash('Consulta agendada com sucesso!', 'success')
@@ -117,4 +103,3 @@ def add_schedule():
             for error in errors:
                 flash(f"Erro no campo '{getattr(form, field).label.text}': {error}", 'danger')
     return redirect(url_for('system.schedule'))
-
