@@ -3,7 +3,8 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from src.models.conversation import db, Patient
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Email, Optional
+
 
 system_bp = Blueprint('system', __name__)
 
