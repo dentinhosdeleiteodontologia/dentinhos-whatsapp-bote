@@ -73,7 +73,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <!-- Formulário para apagar a consulta -->
         <form id="deleteEventForm" method="POST" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger">Apagar Consulta</button>
@@ -107,25 +106,28 @@
       
       eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
       
-      // Clicar num dia ou hora para criar um novo evento
       dateClick: function(info) {
         addForm.action = "{{ url_for('system.add_schedule') }}";
         document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
         addForm.reset();
         
         const startDate = new Date(info.dateStr);
-        if (!info.allDay) { // Se o clique foi numa hora específica (vista de semana/dia)
+        if (!info.allDay) {
             startDate.setHours(new Date(info.dateStr).getHours(), new Date(info.dateStr).getMinutes());
-        } else { // Se o clique foi num dia inteiro (vista de mês)
-            startDate.setHours(9, 0); // Sugere 9h da manhã
+        } else {
+            startDate.setHours(9, 0);
         }
         
         const endDate = new Date(startDate.getTime());
         endDate.setHours(startDate.getHours() + 1);
 
+        // --- FUNÇÃO DE FORMATAÇÃO CORRIGIDA ---
         const formatForInput = (date) => {
-            const pad = (num) => num.toString().padStart(2, '0');
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            // Cria uma data "falsa" deslocada pelo fuso horário para enganar o toISOString()
+            const offset = date.getTimezoneOffset() * 60000;
+            const adjustedDate = new Date(date.getTime() - offset);
+            // Converte para ISO e remove os segundos e o 'Z'
+            return adjustedDate.toISOString().substring(0, 16);
         }
 
         document.getElementById('start_time').value = formatForInput(startDate);
@@ -134,16 +136,14 @@
         addModal.show();
       },
 
-      // Clicar num evento existente para ver os detalhes
       eventClick: function(info) {
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
         document.getElementById('eventTitle').innerText = info.event.title;
         document.getElementById('eventPatient').innerText = info.event.extendedProps.patient_name;
         document.getElementById('eventStart').innerText = new Date(info.event.start).toLocaleString('pt-BR', options);
         document.getElementById('eventEnd').innerText = new Date(info.event.end).toLocaleString('pt-BR', options);
         document.getElementById('eventNotes').innerText = info.event.extendedProps.notes || 'Nenhuma';
 
-        // Configura o formulário de apagar
         const deleteForm = document.getElementById('deleteEventForm');
         deleteForm.action = `/system/agenda/apagar/${info.event.id}`;
         deleteForm.onsubmit = () => confirm('Tem a certeza que quer apagar esta consulta?');
