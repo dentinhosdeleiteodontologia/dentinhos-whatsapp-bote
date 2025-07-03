@@ -56,18 +56,47 @@
   </div>
 </div>
 
+<!-- Modal para Ver Detalhes da Consulta -->
+<div class="modal fade" id="viewEventModal" tabindex="-1" aria-labelledby="viewEventModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewEventModalLabel">Detalhes da Consulta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Título:</strong> <span id="eventTitle"></span></p>
+        <p><strong>Paciente:</strong> <span id="eventPatient"></span></p>
+        <p><strong>Início:</strong> <span id="eventStart"></span></p>
+        <p><strong>Fim:</strong> <span id="eventEnd"></span></p>
+        <p><strong>Notas:</strong> <span id="eventNotes"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <!-- Formulário para apagar a consulta -->
+        <form id="deleteEventForm" method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger">Apagar Consulta</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- Scripts -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
 <script>
   document.addEventListener('DOMContentLoaded', function( ) {
     var calendarEl = document.getElementById('calendar');
-    var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
-    var form = document.querySelector('#scheduleModal form');
+    var addModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    var viewModal = new bootstrap.Modal(document.getElementById('viewEventModal'));
+    var addForm = document.querySelector('#scheduleModal form');
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       locale: 'pt-br',
-      timeZone: 'America/Sao_Paulo', // Define o fuso horário para Brasília
+      timeZone: 'America/Sao_Paulo',
       buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
       headerToolbar: {
         left: 'prev,next today',
@@ -76,49 +105,50 @@
       },
       events: {{ events_json | safe }},
       
-      // --- NOVA CONFIGURAÇÃO DE FORMATAÇÃO DE DATA ---
-      eventTimeFormat: { // Formato da hora dentro do evento
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      },
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
       
-      // Clicar num dia para criar um novo evento
+      // Clicar num dia ou hora para criar um novo evento
       dateClick: function(info) {
-        form.action = "{{ url_for('system.add_schedule') }}";
+        addForm.action = "{{ url_for('system.add_schedule') }}";
         document.getElementById('scheduleModalLabel').innerText = 'Nova Consulta';
-        form.reset();
+        addForm.reset();
         
-        // --- LÓGICA MELHORADA PARA DATA E HORA ---
-        const startDate = new Date(info.dateStr + 'T09:00:00');
+        const startDate = new Date(info.dateStr);
+        if (!info.allDay) { // Se o clique foi numa hora específica (vista de semana/dia)
+            startDate.setHours(new Date(info.dateStr).getHours(), new Date(info.dateStr).getMinutes());
+        } else { // Se o clique foi num dia inteiro (vista de mês)
+            startDate.setHours(9, 0); // Sugere 9h da manhã
+        }
         
-        // Calcula a data final (1 hora depois)
         const endDate = new Date(startDate.getTime());
         endDate.setHours(startDate.getHours() + 1);
 
-        // Formata para o formato que o input 'datetime-local' espera (YYYY-MM-DDTHH:mm)
         const formatForInput = (date) => {
             const pad = (num) => num.toString().padStart(2, '0');
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
         document.getElementById('start_time').value = formatForInput(startDate);
-        document.getElementById('end_time').value = formatForInput(endDate); // Preenche a hora final
+        document.getElementById('end_time').value = formatForInput(endDate);
         
-        scheduleModal.show();
+        addModal.show();
       },
 
       // Clicar num evento existente para ver os detalhes
       eventClick: function(info) {
-        const startTime = new Date(info.event.start).toLocaleString('pt-BR');
-        const endTime = new Date(info.event.end).toLocaleString('pt-BR');
-        
-        alert(
-          'Consulta: ' + info.event.title +
-          '\\nInício: ' + startTime +
-          '\\nFim: ' + endTime +
-          '\\nNotas: ' + (info.event.extendedProps.notes || 'Nenhuma')
-        );
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        document.getElementById('eventTitle').innerText = info.event.title;
+        document.getElementById('eventPatient').innerText = info.event.extendedProps.patient_name;
+        document.getElementById('eventStart').innerText = new Date(info.event.start).toLocaleString('pt-BR', options);
+        document.getElementById('eventEnd').innerText = new Date(info.event.end).toLocaleString('pt-BR', options);
+        document.getElementById('eventNotes').innerText = info.event.extendedProps.notes || 'Nenhuma';
+
+        // Configura o formulário de apagar
+        const deleteForm = document.getElementById('deleteEventForm');
+        deleteForm.action = `/system/agenda/apagar/${info.event.id}`;
+        deleteForm.onsubmit = () => confirm('Tem a certeza que quer apagar esta consulta?');
+
+        viewModal.show();
       }
     });
     calendar.render();
