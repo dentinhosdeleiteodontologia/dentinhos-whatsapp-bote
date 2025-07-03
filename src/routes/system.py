@@ -1,5 +1,5 @@
 # src/routes/system.py
-# Módulo do Sistema de Gestão - Fase 3.1: Refinamento da Agenda
+# Módulo do Sistema de Gestão - Fase 4: Apagar Consultas
 
 import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash
@@ -8,7 +8,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, DateField, TextAreaField, SelectField, DateTimeField
 from wtforms.validators import DataRequired, Email, Optional
 from datetime import datetime, timedelta
-import pytz # Biblioteca para fusos horários
+import pytz
 
 from src.models.conversation import db, Patient, Schedule
 
@@ -105,15 +105,14 @@ def add_schedule():
     form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
     
     if form.validate_on_submit():
-        # Converte os tempos para o fuso horário de Brasília antes de salvar
         start_time_br = BR_TIMEZONE.localize(form.start_time.data)
         end_time_br = BR_TIMEZONE.localize(form.end_time.data)
 
         new_schedule = Schedule(
             patient_id=form.patient_id.data,
             title=form.title.data,
-            start_time=start_time_br, # Salva com fuso horário
-            end_time=end_time_br,     # Salva com fuso horário
+            start_time=start_time_br,
+            end_time=end_time_br,
             notes=form.notes.data
         )
         db.session.add(new_schedule)
@@ -124,4 +123,14 @@ def add_schedule():
             for error in errors:
                 flash(f"Erro no campo '{getattr(form, field).label.text}': {error}", 'danger')
 
+    return redirect(url_for('system.schedule'))
+
+# --- NOSSA NOVA ROTA PARA APAGAR CONSULTAS ---
+@system_bp.route('/agenda/apagar/<int:schedule_id>', methods=['POST'])
+@login_required
+def delete_schedule(schedule_id):
+    schedule_item = Schedule.query.get_or_404(schedule_id)
+    db.session.delete(schedule_item)
+    db.session.commit()
+    flash('Consulta apagada com sucesso.', 'success')
     return redirect(url_for('system.schedule'))
