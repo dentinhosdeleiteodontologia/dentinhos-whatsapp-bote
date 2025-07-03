@@ -3,41 +3,89 @@
 
 {% block content %}
 <style>
-  /* Estilos para o calendário */
-  #calendar {
-    max-width: 1100px;
-    margin: 0 auto;
-  }
+  #calendar { max-width: 1100px; margin: 0 auto; }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1>Agenda de Consultas</h1>
-  <!-- Futuramente, aqui teremos um botão para adicionar nova consulta -->
 </div>
 
 <div id='calendar'></div>
 
-<!-- Incluindo a biblioteca FullCalendar -->
+<!-- Modal para Adicionar Consulta (inicialmente escondido) -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('system.add_schedule') }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="scheduleModalLabel">Nova Consulta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="patient_id" class="form-label">Paciente</label>
+            <select id="patient_id" name="patient_id" class="form-select" required>
+              <option value="" disabled selected>-- Selecione um Paciente --</option>
+              {% for patient in patients %}
+              <option value="{{ patient.id }}">{{ patient.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="title" class="form-label">Título da Consulta</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="start_time" class="form-label">Início</label>
+              <input type="datetime-local" id="start_time" name="start_time" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="end_time" class="form-label">Fim</label>
+              <input type="datetime-local" id="end_time" name="end_time" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notas (Opcional)</label>
+            <textarea id="notes" name="notes" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Salvar Consulta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
 <script>
   document.addEventListener('DOMContentLoaded', function( ) {
     var calendarEl = document.getElementById('calendar');
+    var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth', // Visão inicial de mês
+      initialView: 'dayGridMonth',
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay' // Botões para mudar de visão
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
-      events: {{ events_json | safe }}, // << AQUI A MAGIA ACONTECE
-      locale: 'pt-br', // Traduzir para português
-      buttonText: {
-        today: 'Hoje',
-        month: 'Mês',
-        week: 'Semana',
-        day: 'Dia'
-      },
-      // Futuramente, aqui adicionaremos a funcionalidade de clicar num dia para agendar
+      events: {{ events_json | safe }},
+      locale: 'pt-br',
+      buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
+      
+      // AQUI A MAGIA ACONTECE
+      dateClick: function(info) {
+        // Preenche a data e hora de início no formulário
+        let startTime = info.dateStr + 'T09:00'; // Sugere 9h da manhã
+        document.getElementById('start_time').value = startTime;
+        
+        // Mostra o formulário (modal)
+        scheduleModal.show();
+      }
     });
     calendar.render();
   });
