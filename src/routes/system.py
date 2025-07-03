@@ -77,6 +77,17 @@ class ScheduleForm(FlaskForm):
 
 # --- Rotas de Autenticação ---
 
+@system_bp.route('/')
+@login_required
+def index():
+    """Redireciona a rota base do sistema para a lista de pacientes."""
+    return redirect(url_for('system.list_patients'))
+
+@system_bp.route('/login', methods=['GET', 'POST'])
+def login():
+# ... (o resto do ficheiro continua igual)
+
+
 @system_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Página de login."""
