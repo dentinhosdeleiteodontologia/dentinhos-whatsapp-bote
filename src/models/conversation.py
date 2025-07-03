@@ -72,4 +72,3 @@ class Patient(db.Model):
             'address': self.address,
             'created_at': self.created_at.isoformat()
         }
-feat: Add Patient model to database
