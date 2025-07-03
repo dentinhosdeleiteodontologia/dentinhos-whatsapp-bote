@@ -1,58 +1,103 @@
+# src/main.py
+# Versão 1.1 - Arquitetura de Login Corrigida
+
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
 
-# Importa as configurações do banco de dados e os modelos
 from src.models.conversation import db
+from src.routes.whatsapp import whatsapp_bp
+from src.routes.system import system_bp # Importa apenas o blueprint do sistema
 
-# Cria a aplicação Flask
+# --- Configuração da Aplicação ---
 app = Flask(__name__)
+CORS(app)
+csrf = CSRFProtect(app)
 
-# --- CONFIGURAÇÕES ---
+# Configurações
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dentinhos-secret-key-2024')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///dentinhos_bot.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['WTF_CSRF_ENABLED'] = True # Garante que o CSRF está ativo
 
-# Corrige URL do PostgreSQL no Heroku/Render se necessário
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
+# Corrigir URL do PostgreSQL no Heroku/Render
+db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+if db_uri.startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri.replace('postgres://', 'postgresql://', 1)
 
-# --- INICIALIZAÇÃO DOS MÓDULOS ---
+# Inicializar Banco de Dados
 db.init_app(app)
-CORS(app)
-csrf = CSRFProtect(app) # Inicializa o CSRF aqui
 
-# --- REGISTO DOS BLUEPRINTS (ROTAS) ---
-# Importa os blueprints DEPOIS de a app estar configurada
-from src.routes.whatsapp import whatsapp_bp
-from src.routes.system import system_bp, login_manager
-
-app.register_blueprint(whatsapp_bp, url_prefix='/api/whatsapp')
-app.register_blueprint(system_bp, url_prefix='/system')
-
-# Inicializa o LoginManager com a app
+# --- Configuração do Login Manager ---
+login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = 'system.login' # Rota de login está dentro do blueprint 'system'
+login_manager.login_message = "Por favor, faça o login para aceder a esta página."
+login_manager.login_message_category = "info"
 
-# --- ROTAS GERAIS DA APLICAÇÃO ---
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+ADMIN_USER = {'id': '1', 'username': 'admin', 'password': 'password123'}
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id == ADMIN_USER['id']:
+        return User(user_id)
+    return None
+
+# --- Registro dos Blueprints ---
+app.register_blueprint(whatsapp_bp, url_prefix='/api/whatsapp')
+app.register_blueprint(system_bp) # O prefixo '/system' já está no blueprint
+
+# --- Rotas Principais ---
 @app.route('/')
 def home():
-    return jsonify({
-        "message": "Bot WhatsApp Dentinhos de Leite Odontologia",
-        "status": "online",
-        "version": "1.0.0"
-    })
+    # Redireciona para a página de login se não estiver logado, ou para a lista de pacientes se estiver
+    if current_user.is_authenticated:
+        return redirect(url_for('system.list_patients'))
+    return redirect(url_for('system.login'))
 
 @app.route('/health')
 def health():
     return jsonify({"status": "healthy"})
 
-# --- CRIAÇÃO DAS TABELAS ---
+# --- Rotas de Login/Logout (Agora no main.py) ---
+from wtforms import StringField, PasswordField
+from wtforms.validators import DataRequired
+from flask_wtf import FlaskForm
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('system.list_patients'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        if form.username.data == ADMIN_USER['username'] and form.password.data == ADMIN_USER['password']:
+            user = User(ADMIN_USER['id'])
+            login_user(user)
+            return redirect(url_for('system.list_patients'))
+        else:
+            flash('Usuário ou senha inválidos.', 'danger')
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+# --- Comandos do Flask ---
 with app.app_context():
     db.create_all()
 
-# --- EXECUÇÃO DA APLICAÇÃO ---
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
