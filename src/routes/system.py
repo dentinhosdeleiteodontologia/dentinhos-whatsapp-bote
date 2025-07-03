@@ -165,15 +165,19 @@ def add_schedule():
 # ... (o resto do ficheiro continua igual) ...
 
 
-
-# --- ROTA DA AGENDA ---
+# --- ROTA DA AGENDA (EXISTENTE) ---
 @system_bp.route('/agenda')
 @login_required
 def schedule():
     all_schedules = Schedule.query.all()
     events = [s.to_dict() for s in all_schedules]
     events_json = json.dumps(events)
-    return render_template('schedule.html', events_json=events_json)
+    
+    # BUSCA TODOS OS PACIENTES PARA O FORMULÁRIO
+    all_patients = Patient.query.order_by('full_name').all()
+    
+    return render_template('schedule.html', events_json=events_json, patients=all_patients)
+
 
 @login_manager.unauthorized_handler
 # ... (resto do ficheiro) ...
