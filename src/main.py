@@ -1,16 +1,15 @@
 # src/main.py
-# Versão Final e Corrigida
+# Versão 2.0 - Fase 1 Concluída
 
 import os
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, render_template
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
-from flask_login import LoginManager, current_user
+from flask_login import current_user
 
 from src.models.conversation import db
-from src.auth import auth_bp, login_manager
 from src.routes.whatsapp import whatsapp_bp
-from src.routes.system import system_bp
+from src.auth import auth_bp, login_manager # Importamos o nosso novo módulo
 
 # --- Configuração da Aplicação ---
 app = Flask(__name__)
@@ -28,19 +27,21 @@ if db_uri.startswith('postgres://'):
 
 # Inicializar Extensões
 db.init_app(app)
-login_manager.init_app(app)
+login_manager.init_app(app) # Ligamos o nosso "guarda" à aplicação
 
 # --- Registro dos Blueprints ---
-app.register_blueprint(auth_bp)
 app.register_blueprint(whatsapp_bp, url_prefix='/api/whatsapp')
-app.register_blueprint(system_bp, url_prefix='/system')
+app.register_blueprint(auth_bp) # Registamos o nosso novo módulo de autenticação
 
 # --- Rota Principal ---
 @app.route('/')
 def home():
-    if current_user.is_authenticated:
-        return redirect(url_for('system.list_patients'))
-    return redirect(url_for('auth.login'))
+    # Se o utilizador não estiver logado, vai para a página de login
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    
+    # Se estiver logado, mostramos uma página de boas-vindas simples (por agora)
+    return render_template('home.html')
 
 # --- Comandos do Flask ---
 with app.app_context():
