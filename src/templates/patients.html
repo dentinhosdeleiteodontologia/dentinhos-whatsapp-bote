@@ -4,46 +4,42 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Pacientes</h1>
     <a href="{{ url_for('system.add_patient') }}" class="btn btn-success">
-      + Adicionar Novo Paciente
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"/></svg>
+      Adicionar Paciente
     </a>
   </div>
-  <table class="table table-striped table-hover">
-    <thead>
-      <tr>
-        <th scope="col">Nome Completo</th>
-        <th scope="col">Telefone</th>
-        <th scope="col">Email</th>
-        <th scope="col">Data de Registo</th>
-        <th scope="col" class="text-end">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for patient in patients %}
-      <tr>
-        <td>{{ patient.full_name }}</td>
-        <td>{{ patient.phone_number }}</td>
-        <td>{{ patient.email or 'N/A' }}</td>
-        <td>{{ patient.created_at.strftime('%d/%m/%Y') }}</td>
-        <td class="text-end">
-          <!-- Botão de Editar -->
-          <a href="{{ url_for('system.edit_patient', patient_id=patient.id) }}" class="btn btn-primary btn-sm">Editar</a>
-          
-       <!-- Formulário para o botão de Apagar -->
-<form method="POST" action="{{ url_for('system.delete_patient') }}" style="display:inline;" onsubmit="return confirm('Tem a certeza que quer apagar este paciente? Esta ação não pode ser desfeita.');">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="patient_id" value="{{ patient.id }}"> <!-- LINHA ADICIONADA -->
-    <button type="submit" class="btn btn-danger btn-sm">
-        Apagar
-    </button>
-</form>
-
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="5" class="text-center">Nenhum paciente registado ainda.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nome Completo</th>
+          <th>Telefone</th>
+          <th>Email</th>
+          <th>Data de Registo</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for patient in patients %}
+        <tr>
+          <td>{{ patient.full_name }}</td>
+          <td>{{ patient.phone_number }}</td>
+          <td>{{ patient.email or 'N/A' }}</td>
+          <td>{{ patient.created_at.strftime('%d/%m/%Y' ) }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('system.edit_patient', patient_id=patient.id) }}" class="btn btn-primary btn-sm">Editar</a>
+            <form method="POST" action="{{ url_for('system.delete_patient', patient_id=patient.id) }}" style="display:inline;" onsubmit="return confirm('Tem a certeza que quer apagar este paciente? Esta ação não pode ser desfeita.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-danger btn-sm">Apagar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center">Nenhum paciente registado ainda.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}
