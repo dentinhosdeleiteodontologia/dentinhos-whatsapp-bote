@@ -63,6 +63,48 @@ def logout():
 def list_patients():
     patients = Patient.query.order_by(Patient.full_name).all()
     return render_template('patients.html', patients=patients)
+# ... (código da rota add_patient) ...
+
+# --- NOVAS ROTAS PARA EDITAR E APAGAR ---
+
+@system_bp.route('/pacientes/editar/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
+def edit_patient(patient_id):
+    # Encontra o paciente no banco de dados ou retorna um erro 404 (Não Encontrado)
+    patient = Patient.query.get_or_404(patient_id)
+    # Cria o formulário, pré-preenchendo com os dados do paciente
+    form = PatientForm(obj=patient)
+    
+    if form.validate_on_submit():
+        # Atualiza os dados do paciente com os dados do formulário
+        patient.full_name = form.full_name.data
+        patient.phone_number = form.phone_number.data
+        patient.email = form.email.data
+        patient.birth_date = form.birth_date.data
+        patient.address = form.address.data
+        patient.medical_history = form.medical_history.data
+        
+        db.session.commit()
+        flash(f'Dados de "{patient.full_name}" atualizados com sucesso!', 'success')
+        return redirect(url_for('system.list_patients'))
+        
+    return render_template('patient_form.html', form=form, title=f"Editar Paciente: {patient.full_name}")
+
+@system_bp.route('/pacientes/apagar/<int:patient_id>', methods=['GET']) # Usamos GET aqui porque o link é simples
+@login_required
+def delete_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    patient_name = patient.full_name
+    
+    db.session.delete(patient)
+    db.session.commit()
+    
+    flash(f'Paciente "{patient_name}" apagado com sucesso.', 'warning')
+    return redirect(url_for('system.list_patients'))
+
+
+@login_manager.unauthorized_handler
+# ... (resto do ficheiro) ...
 
 @login_manager.unauthorized_handler
 def unauthorized():
