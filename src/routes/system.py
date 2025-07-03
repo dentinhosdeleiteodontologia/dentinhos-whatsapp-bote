@@ -165,7 +165,7 @@ def add_schedule():
 # ... (o resto do ficheiro continua igual) ...
 
 
-# --- ROTA DA AGENDA (EXISTENTE) ---
+# --- ROTA DA AGENDA (VERSÃO CORRIGIDA E FINAL) ---
 @system_bp.route('/agenda')
 @login_required
 def schedule():
@@ -173,14 +173,15 @@ def schedule():
     events = [s.to_dict() for s in all_schedules]
     events_json = json.dumps(events)
     
-    # BUSCA TODOS OS PACIENTES PARA O FORMULÁRIO
     all_patients = Patient.query.order_by('full_name').all()
     
-        # CRIA UM FORMULÁRIO VAZIO PARA O TEMPLATE
+    # AQUI ESTÁ A CHAVE: Criamos uma instância do formulário
     form = ScheduleForm()
-    form.patient_id.choices = [(p.id, p.full_name) for p in all_patients]
     
-    return render_template('schedule.html', events_json=events_json, patients=all_patients)
+    return render_template('schedule.html', 
+                           events_json=events_json, 
+                           patients=all_patients, 
+                           form=form) # E passamo-la para o template
 
 
 @login_manager.unauthorized_handler
