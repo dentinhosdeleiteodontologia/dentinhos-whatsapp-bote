@@ -176,6 +176,10 @@ def schedule():
     # BUSCA TODOS OS PACIENTES PARA O FORMULÁRIO
     all_patients = Patient.query.order_by('full_name').all()
     
+        # CRIA UM FORMULÁRIO VAZIO PARA O TEMPLATE
+    form = ScheduleForm()
+    form.patient_id.choices = [(p.id, p.full_name) for p in all_patients]
+    
     return render_template('schedule.html', events_json=events_json, patients=all_patients)
 
 
