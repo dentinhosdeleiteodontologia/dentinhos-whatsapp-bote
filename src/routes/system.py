@@ -7,6 +7,10 @@ from wtforms.validators import DataRequired, Email, Optional
 import json
 from src.models.conversation import db, Patient, Schedule
 
+from wtforms import StringField, PasswordField, DateField, TextAreaField, SelectField, DateTimeField
+# ...
+
+
 
 
 system_bp = Blueprint('system', __name__)
@@ -41,6 +45,21 @@ class PatientForm(FlaskForm):
     medical_history = TextAreaField('Anamnese / Histórico Médico', validators=[Optional()])
 
 # --- Rotas do Sistema ---
+
+
+
+
+# ... (depois da classe PatientForm)
+
+# --- NOSSO NOVO FORMULÁRIO DE AGENDAMENTO ---
+class ScheduleForm(FlaskForm):
+    patient_id = SelectField('Paciente', coerce=int, validators=[DataRequired()])
+    title = StringField('Título da Consulta', validators=[DataRequired()])
+    start_time = DateTimeField('Início', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    end_time = DateTimeField('Fim', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    notes = TextAreaField('Notas (Opcional)', validators=[Optional()])
+
+
 
 @system_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -110,6 +129,42 @@ def delete_patient(patient_id):
 # ... (resto do ficheiro) ...
 
 # ... (código da rota delete_patient) ...
+
+
+# ... (código da rota delete_patient) ...
+
+# --- NOVA ROTA PARA ADICIONAR CONSULTAS ---
+@system_bp.route('/agenda/novo', methods=['POST']) # Apenas POST, pois será chamado por um formulário
+@login_required
+def add_schedule():
+    form = ScheduleForm()
+    # Popula a lista de pacientes no formulário
+    form.patient_id.choices = [(p.id, p.full_name) for p in Patient.query.order_by('full_name').all()]
+    
+    if form.validate_on_submit():
+        new_schedule = Schedule(
+            patient_id=form.patient_id.data,
+            title=form.title.data,
+            start_time=form.start_time.data,
+            end_time=form.end_time.data,
+            notes=form.notes.data
+        )
+        db.session.add(new_schedule)
+        db.session.commit()
+        flash('Consulta agendada com sucesso!', 'success')
+    else:
+        # Se houver erros de validação, mostra-os
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Erro no campo '{getattr(form, field).label.text}': {error}", 'danger')
+
+    return redirect(url_for('system.schedule'))
+
+# --- ROTA DA AGENDA (EXISTENTE) ---
+@system_bp.route('/agenda')
+# ... (o resto do ficheiro continua igual) ...
+
+
 
 # --- ROTA DA AGENDA ---
 @system_bp.route('/agenda')
